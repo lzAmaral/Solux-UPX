@@ -1,0 +1,26 @@
+# General
+.DS_Store
+.vscode/
+.idea/
+*.log
+
+# Backend (solux-api)
+solux-api/target/
+solux-api/.mvn/
+solux-api/mvnw
+solux-api/mvnw.cmd
+solux-api/.classpath
+solux-api/.project
+solux-api/.settings/
+solux-api/bin/
+solux-api/.factorypath
+
+# Frontend (solux-web)
+solux-web/node_modules/
+solux-web/dist/
+solux-web/.eslintcache
+solux-web/coverage/
+solux-web/.env.local
+solux-web/.env.development.local
+solux-web/.env.test.local
+solux-web/.env.production.local
