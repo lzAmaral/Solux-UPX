@@ -36,11 +36,13 @@ public class Cliente {
 
     private String endereco;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "tipo_cliente", length = 20)
-    private String tipoCliente;
+    private com.solux.api.enums.TipoCliente tipoCliente;
 
+    @Enumerated(EnumType.STRING)
     @Column(length = 50)
-    private String status;
+    private com.solux.api.enums.StatusCliente status;
 
     @OneToMany(mappedBy = "cliente")
     private List<UnidadeConsumidora> unidadesConsumidoras;

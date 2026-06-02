@@ -3,10 +3,12 @@ import { Card } from '../../components/ui/Card';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import api from '../../api/api';
 import { exportacaoService } from '../../services/exportacaoService';
-import { Filter, Download, Calendar } from 'lucide-react';
+import { Filter, Download, Calendar, User } from 'lucide-react';
 
 const AdminRateios = () => {
   const [rateios, setRateios] = useState([]);
+  const [ucMap, setUcMap] = useState({});
+  const [clienteMap, setClienteMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [mes, setMes] = useState('12');
   const [ano, setAno] = useState('2026');
@@ -14,13 +16,27 @@ const AdminRateios = () => {
   const fetchRateios = async () => {
     setLoading(true);
     try {
-      // Para simular a listagem da tela, no mundo real teríamos um endpoint de busca.
-      // Como o endpoint atual é exportacao CSV, vamos buscar /rateios gerais e filtrar no front.
-      const response = await api.get('/rateios');
-      const dados = response.data || [];
-      // O rateio tem idGeracao. Precisariamos da geracao para saber o mes/ano. 
-      // Por enquanto mostraremos todos na tabela e o botão de exportar usará os filtros para bater na API real.
-      setRateios(dados.slice(0, 50)); // Limitando para performance visual
+      const [ratRes, uniRes, cliRes] = await Promise.all([
+        api.get('/rateios'),
+        api.get('/unidades'),
+        api.get('/clientes')
+      ]);
+
+      const dados = ratRes.data || [];
+
+      // Mapear UCs e clientes para lookup rápido
+      const ucs = (uniRes.data || []).reduce((acc, u) => {
+        acc[u.id] = u;
+        return acc;
+      }, {});
+      const clientes = (cliRes.data || []).reduce((acc, c) => {
+        acc[c.id] = c;
+        return acc;
+      }, {});
+
+      setUcMap(ucs);
+      setClienteMap(clientes);
+      setRateios(dados.slice(0, 50));
     } catch (err) {
       console.error('Erro ao buscar rateios', err);
     } finally {
@@ -58,7 +74,7 @@ const AdminRateios = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Rateios</h1>
-          <p className="text-slate-500 dark:text-slate-400">Distribuição de créditos de energia.</p>
+          <p className="text-slate-500 dark:text-slate-400">Distribuição de créditos de energia por cliente e unidade.</p>
         </div>
       </div>
 
@@ -98,8 +114,8 @@ const AdminRateios = () => {
           <table className="w-full text-left text-sm text-slate-600 dark:text-slate-400">
             <thead className="bg-slate-50 dark:bg-slate-800 text-xs uppercase text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
               <tr>
-                <th className="px-6 py-4 font-medium">ID Rateio</th>
-                <th className="px-6 py-4 font-medium">ID UC</th>
+                <th className="px-6 py-4 font-medium">Cliente</th>
+                <th className="px-6 py-4 font-medium">Unidade Consumidora</th>
                 <th className="px-6 py-4 font-medium">% Rateio</th>
                 <th className="px-6 py-4 font-medium">Energia (kWh)</th>
                 <th className="px-6 py-4 font-medium">Economia (R$)</th>
@@ -107,20 +123,40 @@ const AdminRateios = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {rateios.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors">
-                  <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">#{r.id}</td>
-                  <td className="px-6 py-4 text-slate-900 dark:text-white">UC {r.idUnidade}</td>
-                  <td className="px-6 py-4">{r.percentualRateio}%</td>
-                  <td className="px-6 py-4 text-blue-600 dark:text-blue-400 font-medium">{r.energiaCreditadaKwh}</td>
-                  <td className="px-6 py-4 text-emerald-600 dark:text-emerald-400 font-medium">{formatCurrency(r.valorEconomizado)}</td>
-                  <td className="px-6 py-4">{r.saldoCreditoKwh}</td>
-                </tr>
-              ))}
+              {rateios.map((r) => {
+                const uc = ucMap[r.idUnidade];
+                const cliente = uc ? clienteMap[uc.idCliente] : null;
+                return (
+                  <tr key={r.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                          <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <span className="font-medium text-slate-900 dark:text-white">
+                          {cliente?.nome || `Cliente ID ${uc?.idCliente || '?'}`}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                        {uc?.numeroUc || `UC ${r.idUnidade}`}
+                      </span>
+                      {uc?.distribuidora && (
+                        <span className="ml-2 text-xs text-slate-400">{uc.distribuidora}</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">{r.percentualRateio}%</td>
+                    <td className="px-6 py-4 text-blue-600 dark:text-blue-400 font-medium">{r.energiaCreditadaKwh}</td>
+                    <td className="px-6 py-4 text-emerald-600 dark:text-emerald-400 font-medium">{formatCurrency(r.valorEconomizado)}</td>
+                    <td className="px-6 py-4">{r.saldoCreditoKwh}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           <div className="p-4 text-center text-xs text-slate-500">
-            Mostrando os últimos 50 rateios gerais. Para o relatório completo do mês, use o botão Exportar.
+            Mostrando os últimos 50 rateios. Para o relatório completo do mês, use o botão Exportar.
           </div>
         </div>
       </Card>

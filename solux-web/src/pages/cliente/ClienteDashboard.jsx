@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import api from '../../api/api';
-import { Zap, PiggyBank, Calendar, Wallet } from 'lucide-react';
+import { Zap, PiggyBank, TrendingUp, Wallet } from 'lucide-react';
 import { 
   AreaChart, 
   Area, 
@@ -16,50 +16,74 @@ import {
   Bar
 } from 'recharts';
 
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
 const ClienteDashboard = () => {
   const { user } = useAuth();
   const [dados, setDados] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Simulação: assumiremos que o cliente logado tem ID 1, ou agrupamos todos os rateios da primeira UC encontrada
   useEffect(() => {
     const fetchClienteData = async () => {
       try {
-        const [uniRes, ratRes] = await Promise.all([
+        const [clientesRes, uniRes, ratRes, geracaoRes] = await Promise.all([
+          api.get('/clientes'),
           api.get('/unidades'),
-          api.get('/rateios')
+          api.get('/rateios'),
+          api.get('/geracao')
         ]);
 
-        // Simula pegando as UCs do Cliente ID 1
-        const minhasUcs = (uniRes.data || []).filter(u => u.idCliente === 1);
+        // Encontrar o cliente pelo email do usuário logado
+        const clientes = clientesRes.data || [];
+        const clienteLogado = clientes.find(
+          c => c.email?.toLowerCase() === user?.email?.toLowerCase()
+        ) || clientes[0]; // fallback para o primeiro cliente caso email não bata
+
+        const clienteId = clienteLogado?.id;
+
+        const minhasUcs = (uniRes.data || []).filter(u => u.idCliente === clienteId);
         const meusIdsUcs = minhasUcs.map(u => u.id);
 
+        const geracaoMap = (geracaoRes.data || []).reduce((acc, g) => {
+          acc[g.id] = g;
+          return acc;
+        }, {});
+
         const meusRateios = (ratRes.data || []).filter(r => meusIdsUcs.includes(r.idUnidade));
-        
-        // Ordenação simplificada assumindo que IDs maiores são mais recentes
         meusRateios.sort((a, b) => a.id - b.id);
 
         const economiaTotal = meusRateios.reduce((acc, curr) => acc + curr.valorEconomizado, 0);
-        const creditosRecebidos = meusRateios.reduce((acc, curr) => acc + curr.energiaCreditadaKwh, 0);
-        
-        // Pega o último rateio para mostrar "No mês"
         const ultimoRateio = meusRateios[meusRateios.length - 1] || {};
 
-        // Preparar dados para o gráfico de economia (acumulada ou mensal)
-        const chartData = meusRateios.map((r, i) => ({
-          name: `Mês ${i + 1}`,
-          economia: r.valorEconomizado,
-          creditos: r.energiaCreditadaKwh
-        })).slice(-6); // Últimos 6 meses simulados
+        // Projeção anual: média dos últimos 3 meses × 12
+        const ultimos3 = meusRateios.slice(-3);
+        const mediaUltimos3 = ultimos3.length > 0
+          ? ultimos3.reduce((acc, r) => acc + r.valorEconomizado, 0) / ultimos3.length
+          : 0;
+        const projecaoAnual = mediaUltimos3 * 12;
+
+        // Preparar dados para o gráfico com labels reais de mês/ano
+        const chartData = meusRateios.map(r => {
+          const geracao = geracaoMap[r.idGeracao];
+          const label = geracao
+            ? `${MESES[geracao.mes - 1]}/${String(geracao.ano).slice(-2)}`
+            : `#${r.id}`;
+          return {
+            name: label,
+            economia: r.valorEconomizado,
+            creditos: r.energiaCreditadaKwh
+          };
+        }).slice(-6);
 
         setDados({
+          nomeCliente: clienteLogado?.nome || user?.name,
           economiaTotal,
-          creditosRecebidos,
           economiaMes: ultimoRateio.valorEconomizado || 0,
           creditosMes: ultimoRateio.energiaCreditadaKwh || 0,
           saldoAtual: ultimoRateio.saldoCreditoKwh || 0,
           ucs: minhasUcs.length,
           distribuidora: minhasUcs[0]?.distribuidora || 'N/A',
+          projecaoAnual,
           chartData
         });
       } catch (err) {
@@ -69,7 +93,7 @@ const ClienteDashboard = () => {
       }
     };
     fetchClienteData();
-  }, []);
+  }, [user]);
 
   if (loading || !dados) {
     return <div className="flex h-[80vh] items-center justify-center"><LoadingSpinner size="lg" /></div>;
@@ -80,7 +104,7 @@ const ClienteDashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Olá, {user?.name}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Olá, {dados.nomeCliente || user?.name}</h1>
         <p className="text-slate-500 dark:text-slate-400">Aqui está o resumo da sua economia com energia solar.</p>
       </div>
 
@@ -124,16 +148,17 @@ const ClienteDashboard = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Projeção Anual */}
+        <Card className="border-amber-200 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <p className="text-slate-500 dark:text-slate-400 font-medium">Unidades Atendidas</p>
-              <div className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg">
-                <Calendar className="w-5 h-5" />
+              <p className="text-amber-700 dark:text-amber-400 font-medium">Projeção Anual</p>
+              <div className="p-2 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg">
+                <TrendingUp className="w-5 h-5" />
               </div>
             </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white">{dados.ucs}</p>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Recebendo créditos</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">{formatCurrency(dados.projecaoAnual)}</p>
+            <p className="text-amber-600 dark:text-amber-500 text-sm mt-2">Baseado na média dos últimos 3 meses</p>
           </CardContent>
         </Card>
       </div>

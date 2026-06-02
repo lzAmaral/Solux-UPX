@@ -20,7 +20,7 @@ public class UsinaService {
 
     public UsinaDTO salvar(UsinaDTO dto) {
         Empresa empresa = empresaRepository.findById(dto.getIdEmpresa())
-                .orElseThrow(() -> new RuntimeException("Empresa não encontrada"));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Empresa não encontrada"));
 
         Usina usina = new Usina();
         usina.setEmpresa(empresa);
@@ -40,7 +40,7 @@ public class UsinaService {
 
     public UsinaDTO buscarPorId(Long id) {
         Usina usina = usinaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Usina não encontrada"));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Usina não encontrada"));
         return toDTO(usina);
     }
 

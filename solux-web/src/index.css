@@ -1,47 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
+  --color-primary-50: #ecfdf5;
+  --color-primary-100: #d1fae5;
+  --color-primary-200: #a7f3d0;
+  --color-primary-300: #6ee7b7;
+  --color-primary-400: #34d399;
+  --color-primary-500: #10b981;
+  --color-primary-600: #059669;
+  --color-primary-700: #047857;
+  --color-primary-800: #065f46;
+  --color-primary-900: #064e3b;
 
-  --color-background-dark: #0f172a;
-  --color-surface-dark: #1e293b;
-  --color-border-dark: #334155;
+  --color-background-dark: #020617; 
+  --color-surface-dark: rgba(2, 6, 23, 0.6); 
+  --color-border-dark: rgba(16, 185, 129, 0.2); 
   --color-text-dark: #f8fafc;
   --color-text-muted-dark: #94a3b8;
 }
 
-/* Glassmorphism utilities */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* Removido glass manual para usar utilitários Tailwind */
+
+/* Micro-interactions (Subtle) */
+.btn-motion {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-dark {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.btn-motion:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3), 0 8px 10px -6px rgba(16, 185, 129, 0.1);
+}
+
+.btn-motion:active {
+  transform: translateY(1px);
+}
+
+.card-motion {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-motion:hover {
+  transform: translateY(-4px);
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2), 0 0 20px rgba(16, 185, 129, 0.05);
 }
 
 html, body {
-  @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  @apply text-slate-900 font-sans antialiased;
   min-height: 100vh;
+  background: radial-gradient(circle at top right, #f8fafc, #ecfdf5);
+  background-attachment: fixed;
 }
 
-/* Dark mode basic setup */
 @media (prefers-color-scheme: dark) {
   html, body {
-    @apply bg-background-dark text-text-dark;
+    @apply text-text-dark;
+    background: radial-gradient(circle at top right, #064e3b, #020617 40%);
+    background-attachment: fixed;
   }
 }

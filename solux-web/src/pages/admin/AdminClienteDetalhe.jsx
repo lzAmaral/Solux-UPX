@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Ca
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { clienteService } from '../../services/clienteService';
 import api from '../../api/api';
-import { ArrowLeft, User, MapPin, Zap, Download, PiggyBank, History } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Zap, Download, PiggyBank, History, CheckCircle2, XCircle, AlertTriangle, TrendingUp } from 'lucide-react';
 
 const AdminClienteDetalhe = () => {
   const { id } = useParams();
@@ -67,7 +67,20 @@ const AdminClienteDetalhe = () => {
     return <div className="text-center py-10">Cliente não encontrado.</div>;
   }
 
+  const formatCurrency = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
   const economiaTotal = rateios.reduce((acc, curr) => acc + curr.valorEconomizado, 0);
+  const ultimoRateio = rateios[0]; // já ordenado desc
+  const saldoAtual = ultimoRateio?.saldoCreditoKwh || 0;
+  const mediaMensal = rateios.length > 0 ? economiaTotal / rateios.length : 0;
+  const projecaoAnual = mediaMensal * 12;
+
+  // Badge de saúde do cliente
+  const statusConfig = {
+    ATIVO: { label: 'Ativo', icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30' },
+    INATIVO: { label: 'Inativo', icon: XCircle, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700' },
+    SUSPENSO: { label: 'Suspenso', icon: AlertTriangle, color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30' },
+  };
+  const saude = statusConfig[cliente.status] || statusConfig.ATIVO;
 
   return (
     <div className="space-y-6">
@@ -90,6 +103,24 @@ const AdminClienteDetalhe = () => {
         </button>
       </div>
 
+      {/* Badge de Saúde */}
+      <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border ${saude.bg}`}>
+        <div className={`flex items-center gap-2 font-semibold text-sm ${saude.color}`}>
+          <saude.icon className="w-5 h-5" />
+          Cliente {saude.label}
+        </div>
+        <div className="flex flex-wrap gap-4 sm:ml-4">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+              <strong className="text-slate-700 dark:text-slate-300">{rateios.length}</strong> meses de rateio processados
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Saldo atual: <strong className={saldoAtual > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}>{saldoAtual} kWh</strong>
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Média mensal: <strong className="text-slate-700 dark:text-slate-300">{formatCurrency(mediaMensal)}</strong>
+            </span>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Dados Pessoais */}
         <Card>
@@ -156,9 +187,16 @@ const AdminClienteDetalhe = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm text-slate-500">Economia Total (Estimada)</p>
+              <p className="text-sm text-slate-500">Economia Total</p>
               <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(economiaTotal)}
+                {formatCurrency(economiaTotal)}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Projeção Anual</p>
+              <p className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-1">
+                <TrendingUp className="w-4 h-4 text-amber-500" />
+                {formatCurrency(projecaoAnual)}
               </p>
             </div>
             <div>
@@ -193,7 +231,7 @@ const AdminClienteDetalhe = () => {
                   <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">Rateio #{r.id}</td>
                   <td className="px-6 py-4 text-amber-600 dark:text-amber-400 font-medium">+{r.energiaCreditadaKwh} kWh</td>
                   <td className="px-6 py-4 text-emerald-600 dark:text-emerald-400 font-medium">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(r.valorEconomizado)}
+                    {formatCurrency(r.valorEconomizado)}
                   </td>
                   <td className="px-6 py-4">{r.saldoCreditoKwh} kWh</td>
                 </tr>

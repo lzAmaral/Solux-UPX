@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { dashboardService } from '../../services/apiService';
-import { Users, Zap, BatteryCharging, PiggyBank } from 'lucide-react';
+import api from '../../api/api';
+import { Users, Zap, BatteryCharging, PiggyBank, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
 import { 
   BarChart, 
   Bar, 
@@ -15,16 +16,45 @@ import {
   Area
 } from 'recharts';
 
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
 const AdminDashboard = () => {
   const [data, setData] = useState(null);
+  const [ciclo, setCiclo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const stats = await dashboardService.getStats();
+        const [stats, geracaoRes] = await Promise.all([
+          dashboardService.getStats(),
+          api.get('/geracao')
+        ]);
         setData(stats);
+
+        // Calcular status do ciclo mensal
+        const geracoes = geracaoRes.data || [];
+        const agora = new Date();
+        const mesAtual = agora.getMonth() + 1;
+        const anoAtual = agora.getFullYear();
+
+        // Última geração registrada
+        const ultima = geracoes.sort((a, b) => {
+          if (a.ano !== b.ano) return b.ano - a.ano;
+          return b.mes - a.mes;
+        })[0];
+
+        const mesAtualProcessado = ultima
+          ? (ultima.mes === mesAtual && ultima.ano === anoAtual)
+          : false;
+
+        setCiclo({
+          ultimoMes: ultima ? `${MESES[ultima.mes - 1]}/${ultima.ano}` : null,
+          mesAtualProcessado,
+          mesAtual: `${MESES[mesAtual - 1]}/${anoAtual}`,
+          totalGeracoes: geracoes.length,
+        });
       } catch (err) {
         setError('Não foi possível carregar os dados do dashboard.');
       } finally {
@@ -67,6 +97,45 @@ const AdminDashboard = () => {
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Visão Geral</h1>
         <p className="text-slate-500 dark:text-slate-400">Acompanhe os principais indicadores da operação GD.</p>
       </div>
+
+      {/* Status do Ciclo Mensal */}
+      {ciclo && (
+        <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-xl border ${
+          ciclo.mesAtualProcessado
+            ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30'
+            : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30'
+        }`}>
+          <div className={`p-2 rounded-lg flex-shrink-0 ${
+            ciclo.mesAtualProcessado
+              ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+              : 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'
+          }`}>
+            {ciclo.mesAtualProcessado ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+          </div>
+          <div className="flex-1">
+            <p className={`font-semibold text-sm ${
+              ciclo.mesAtualProcessado ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'
+            }`}>
+              {ciclo.mesAtualProcessado
+                ? `Ciclo de ${ciclo.mesAtual} processado com sucesso`
+                : `Geração de ${ciclo.mesAtual} ainda não foi lançada`
+              }
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {ciclo.ultimoMes
+                ? `Último período processado: ${ciclo.ultimoMes} • Total de ${ciclo.totalGeracoes} registros de geração`
+                : 'Nenhuma geração registrada ainda'
+              }
+            </p>
+          </div>
+          {!ciclo.mesAtualProcessado && (
+            <div className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 px-3 py-1.5 rounded-full flex-shrink-0">
+              <Clock className="w-3.5 h-3.5" />
+              Ir para Geração
+            </div>
+          )}
+        </div>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

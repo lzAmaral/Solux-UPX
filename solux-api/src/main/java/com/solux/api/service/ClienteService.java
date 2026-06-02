@@ -20,7 +20,7 @@ public class ClienteService {
 
     public ClienteDTO salvar(ClienteDTO dto) {
         Empresa empresa = empresaRepository.findById(dto.getIdEmpresa())
-                .orElseThrow(() -> new RuntimeException("Empresa não encontrada"));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Empresa não encontrada"));
 
         Cliente cliente = new Cliente();
         cliente.setEmpresa(empresa);
@@ -30,7 +30,7 @@ public class ClienteService {
         cliente.setTelefone(dto.getTelefone());
         cliente.setEndereco(dto.getEndereco());
         cliente.setTipoCliente(dto.getTipoCliente());
-        cliente.setStatus(dto.getStatus() != null ? dto.getStatus() : "ATIVO");
+        cliente.setStatus(dto.getStatus() != null ? dto.getStatus() : com.solux.api.enums.StatusCliente.ATIVO);
 
         cliente = clienteRepository.save(cliente);
         dto.setId(cliente.getId());
@@ -43,7 +43,7 @@ public class ClienteService {
 
     public ClienteDTO buscarPorId(Long id) {
         Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente não encontrado"));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Cliente não encontrado"));
         return toDTO(cliente);
     }
 

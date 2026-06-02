@@ -34,6 +34,15 @@ public class RateioEngineService {
         BigDecimal energiaGerada = geracao.getEnergiaGeradaKwh();
         BigDecimal tarifa = geracao.getTarifaKwh();
 
+        List<Long> ucIds = ucs.stream().map(UnidadeConsumidora::getId).collect(java.util.stream.Collectors.toList());
+        java.util.Map<Long, CreditoEnergia> contaCorrenteMap = creditoEnergiaRepository
+                .findByUnidadeConsumidoraIdInAndMesReferenciaAndAnoReferencia(ucIds, geracao.getMes(), geracao.getAno())
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(c -> c.getUnidadeConsumidora().getId(), c -> c));
+
+        List<CreditoEnergia> creditosParaSalvar = new java.util.ArrayList<>();
+        List<RateioMensal> rateiosParaSalvar = new java.util.ArrayList<>();
+
         for (UnidadeConsumidora uc : ucs) {
             BigDecimal percentual = uc.getPercentualRateio();
             
@@ -49,19 +58,13 @@ public class RateioEngineService {
             BigDecimal valorEconomizado = energiaCreditada.multiply(tarifa).setScale(2, RoundingMode.HALF_UP);
 
             // 4. Lógica de Consumo e Sobra de Créditos
-            // Como não temos a medição real mensal neste MVP, usamos o consumo médio para simular a sobra
             BigDecimal consumoSimulado = uc.getConsumoMedioKwh() != null ? uc.getConsumoMedioKwh() : BigDecimal.ZERO;
             
             BigDecimal sobra = energiaCreditada.subtract(consumoSimulado);
             
-            // Busca ou inicializa a Conta Corrente (CreditoEnergia) da UC
-            CreditoEnergia contaCorrente = creditoEnergiaRepository
-                    .findByUnidadeConsumidoraIdAndMesReferenciaAndAnoReferencia(uc.getId(), geracao.getMes(), geracao.getAno())
-                    .orElse(null);
+            CreditoEnergia contaCorrente = contaCorrenteMap.get(uc.getId());
 
             if (contaCorrente == null) {
-                // Se não existe para esse mês, busca o saldo mais recente ou cria do zero
-                // (Para simplificar no MVP, vamos apenas criar/atualizar um registro histórico do saldo)
                 contaCorrente = new CreditoEnergia();
                 contaCorrente.setUnidadeConsumidora(uc);
                 contaCorrente.setMesReferencia(geracao.getMes());
@@ -71,19 +74,17 @@ public class RateioEngineService {
 
             BigDecimal saldoFinal = contaCorrente.getSaldoAtualKwh();
             if (sobra.compareTo(BigDecimal.ZERO) > 0) {
-                // Se sobrou energia no mês, acumula no saldo
                 saldoFinal = saldoFinal.add(sobra);
             } else {
-                // Se faltou (sobra negativa), abate do saldo existente se houver
                 saldoFinal = saldoFinal.add(sobra);
                 if (saldoFinal.compareTo(BigDecimal.ZERO) < 0) {
-                    saldoFinal = BigDecimal.ZERO; // Cliente terá que pagar a diferença na conta de luz, saldo zera.
+                    saldoFinal = BigDecimal.ZERO;
                 }
             }
 
             contaCorrente.setSaldoAtualKwh(saldoFinal);
             contaCorrente.setDataAtualizacao(LocalDateTime.now());
-            creditoEnergiaRepository.save(contaCorrente);
+            creditosParaSalvar.add(contaCorrente);
 
             // 5. Registra o histórico do Rateio
             RateioMensal rateio = new RateioMensal();
@@ -94,7 +95,10 @@ public class RateioEngineService {
             rateio.setValorEconomizado(valorEconomizado);
             rateio.setSaldoCreditoKwh(saldoFinal);
             
-            rateioMensalRepository.save(rateio);
+            rateiosParaSalvar.add(rateio);
         }
+
+        creditoEnergiaRepository.saveAll(creditosParaSalvar);
+        rateioMensalRepository.saveAll(rateiosParaSalvar);
     }
 }

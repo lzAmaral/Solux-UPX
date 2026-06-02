@@ -32,7 +32,7 @@ const AdminLayout = ({ children }) => {
   ];
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       
       {/* Mobile sidebar overlay */}
       {isMobileOpen && (
@@ -44,17 +44,14 @@ const AdminLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700
+        fixed inset-y-0 left-0 z-50 w-72 bg-white/70 dark:bg-slate-950/60 backdrop-blur-xl border-r border-slate-200 dark:border-emerald-500/15 shadow-lg
         transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center h-16 px-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
-            <Sun className="h-8 w-8 text-blue-600 dark:text-blue-400 mr-3" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Solux
-            </span>
+          <div className="flex items-center h-16 px-6 border-b border-slate-200/50 dark:border-emerald-500/15">
+            <img src="/2.png" alt="Solux Logo" className="h-10 w-auto" />
             <button 
               className="ml-auto lg:hidden text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               onClick={() => setIsMobileOpen(false)}
@@ -72,10 +69,10 @@ const AdminLayout = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   className={({ isActive }) => `
-                    flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200
+                    flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 btn-motion
                     ${isActive 
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' 
-                      : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200'
+                      ? 'bg-emerald-100/80 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 shadow-sm' 
+                      : 'text-slate-700 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
                     }
                   `}
                 >
@@ -87,9 +84,9 @@ const AdminLayout = ({ children }) => {
           </nav>
 
           {/* User & Logout */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-            <div className="flex items-center px-4 py-3 mb-2 rounded-xl bg-slate-50 dark:bg-slate-700/30">
-              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+          <div className="p-4 border-t border-slate-200/50 dark:border-emerald-500/15">
+            <div className="flex items-center px-4 py-3 mb-2 rounded-xl bg-slate-100/50 dark:bg-slate-800/50">
+              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold">
                 {user?.name?.charAt(0) || 'A'}
               </div>
               <div className="ml-3 truncate">
@@ -111,22 +108,20 @@ const AdminLayout = ({ children }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Topbar for mobile */}
-        <header className="lg:hidden flex items-center h-16 px-4 sm:px-6 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <header className="lg:hidden flex items-center h-16 px-4 sm:px-6 border-b border-slate-200/50 dark:border-emerald-500/15 bg-white/70 dark:bg-slate-950/60 backdrop-blur-xl">
           <button
             onClick={() => setIsMobileOpen(true)}
-            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500"
           >
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex-1 flex justify-center">
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Solux
-            </span>
+            <img src="/2.png" alt="Solux Logo" className="h-8 w-auto" />
           </div>
         </header>
 
         {/* Main scrollable area */}
-        <main className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-900">
+        <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </div>

@@ -1,6 +1,7 @@
 package com.solux.api.repository;
 
 import com.solux.api.entity.RateioMensal;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +11,10 @@ import java.util.List;
 
 @Repository
 public interface RateioMensalRepository extends JpaRepository<RateioMensal, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"unidadeConsumidora", "geracao"})
+    List<RateioMensal> findAll();
 
     @Query("SELECT new com.solux.api.dto.RateioExportacaoDTO(" +
            "c.nome, c.cpfCnpj, uc.numeroUc, uc.distribuidora, " +
