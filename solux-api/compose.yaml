@@ -2,9 +2,9 @@ services:
   mysql:
     image: 'mysql:8.0'
     environment:
-      - 'MYSQL_DATABASE=solux_db'
-      - 'MYSQL_PASSWORD=solux_password'
-      - 'MYSQL_ROOT_PASSWORD=root'
-      - 'MYSQL_USER=solux_user'
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-solux_db}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-solux_password}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_USER=${MYSQL_USER:-solux_user}
     ports:
       - '3306:3306'
