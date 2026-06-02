@@ -3,6 +3,7 @@
 .vscode/
 .idea/
 *.log
+.agent/
 
 # Backend (solux-api)
 solux-api/target/
